@@ -1,0 +1,41 @@
+{
+  "name": "@nakshatra6350/api-diff",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Runtime API contract drift detector for frontend apps",
+  "main": "dist/index.js",
+  "module": "dist/index.esm.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.esm.js",
+      "require": "./dist/index.js"
+      
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts",
+    "test": "vitest run",
+    "lint": "eslint src"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@typescript-eslint/parser": "^8.67.0",
+    "eslint": "^10.9.0",
+    "tsup": "^8.5.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.11"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Nakshatra6350/api-diff"
+  },
+  "homepage": "https://github.com/Nakshatra6350/api-diff#readme",
+  "bugs": {
+    "url": "https://github.com/Nakshatra6350/api-diff/issues"
+  }
+}
