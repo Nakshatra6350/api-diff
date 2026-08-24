@@ -1,4 +1,8 @@
 # @nakshatra6350/api-diff
+[![npm version](https://img.shields.io/npm/v/@nakshatra6350/api-diff)](https://www.npmjs.com/package/@nakshatra6350/api-diff)
+[![npm downloads](https://img.shields.io/npm/dw/@nakshatra6350/api-diff)](https://www.npmjs.com/package/@nakshatra6350/api-diff)
+[![license](https://img.shields.io/npm/l/@nakshatra6350/api-diff)](https://github.com/nakshatra6350/api-diff/blob/main/LICENSE)
+[![CI](https://github.com/nakshatra6350/api-diff/actions/workflows/ci.yml/badge.svg)](https://github.com/nakshatra6350/api-diff/actions)
 
 > Catch API contract drift before your users do.
 
