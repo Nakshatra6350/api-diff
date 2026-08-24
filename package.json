@@ -1,6 +1,6 @@
 {
   "name": "@nakshatra6350/api-diff",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "description": "Runtime API contract drift detector for frontend apps",
   "main": "dist/index.js",
