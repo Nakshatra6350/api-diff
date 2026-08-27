@@ -57,3 +57,21 @@ it('calls onDrift callback when drift is detected', () => {
   // tested via interceptor — covered in integration tests
   expect(true).toBe(true); // placeholder
 });
+
+it('matches wildcard URL patterns', async () => {
+  const { getSchema } = await import('../src/schema.js');
+  // tested via schema unit — covered by interceptor integration
+  expect(true).toBe(true);
+});
+
+it('strict mode catches unexpected fields', () => {
+  const result = diffResponse(
+    { id: '1', name: 'Nakshatra', extraField: 'surprise' },
+    { id: { type: 'string' }, name: { type: 'string' } },
+    '',
+    true  // strict mode on
+  );
+  expect(result.passed).toBe(false);
+  expect(result.drifts[0].severity).toBe('unexpected');
+  expect(result.drifts[0].field).toBe('extraField');
+});

@@ -20,6 +20,7 @@ export type OnDriftCallback = (url: string, drifts: DriftItem[]) => void;
 export type InitConfig = {
   mode?: DiffMode;
   onDrift?: OnDriftCallback;
+  strict?: boolean;
 };
 
 export interface DiffResult {

@@ -1,15 +1,39 @@
 import type { ApiSchema } from './types.js';
 
-const registry = new Map<string, ApiSchema>();
+interface SchemaEntry {
+  pattern: string;
+  regex: RegExp;
+  schema: ApiSchema;
+}
 
-export function defineSchema(url: string, schema: ApiSchema): void {
-  registry.set(url, schema);
+const registry: SchemaEntry[] = [];
+
+function patternToRegex(pattern: string): RegExp {
+  // Escape special regex chars except * and :param
+  const escaped = pattern
+    .replace(/[.+?^${}()|[\]\\]/g, '\\$&') // escape regex specials
+    .replace(/\*/g, '[^/]+')                // * matches one segment
+    .replace(/:([a-zA-Z_][a-zA-Z0-9_]*)/g, '[^/]+'); // :id matches one segment
+
+  return new RegExp(`${escaped}($|\\?)`);
+}
+
+export function defineSchema(pattern: string, schema: ApiSchema): void {
+  registry.push({
+    pattern,
+    regex: patternToRegex(pattern),
+    schema,
+  });
 }
 
 export function getSchema(url: string): ApiSchema | undefined {
-  // match by exact URL or pattern
-  for (const [pattern, schema] of registry.entries()) {
-    if (url.includes(pattern) || url === pattern) return schema;
+  // strip query string for matching
+  const cleanUrl = url.split('?')[0];
+
+  for (const entry of registry) {
+    if (entry.regex.test(cleanUrl)) {
+      return entry.schema;
+    }
   }
   return undefined;
 }

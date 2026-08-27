@@ -4,6 +4,7 @@ import type { DiffMode, InitConfig } from './types.js';
 
 let _mode: DiffMode = 'warn';
 let _onDrift: ((url: string, drifts: any[]) => void) | undefined;
+let _strict = false;
 let _originalFetch = globalThis.fetch;
 
 export function init(config: DiffMode | InitConfig = 'warn'): void {
@@ -11,9 +12,11 @@ export function init(config: DiffMode | InitConfig = 'warn'): void {
   if (typeof config === 'string') {
     _mode = config;
     _onDrift = undefined;
+    _strict = false;
   } else {
     _mode = config.mode ?? 'warn';
     _onDrift = config.onDrift;
+    _strict = config.strict ?? false;
   }
 
   _originalFetch = globalThis.fetch;
@@ -34,7 +37,7 @@ export function init(config: DiffMode | InitConfig = 'warn'): void {
       const data = await clone.json().catch(() => null);
 
       if (data !== null) {
-        const result = diffResponse(data, schema);
+        const result = diffResponse(data, schema, '', _strict);
 
         if (!result.passed) {
           // fire onDrift callback if provided
