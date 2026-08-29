@@ -9,13 +9,12 @@ interface SchemaEntry {
 const registry: SchemaEntry[] = [];
 
 function patternToRegex(pattern: string): RegExp {
-  // Escape special regex chars except * and :param
-  const escaped = pattern
-    .replace(/[.+?^${}()|[\]\\]/g, '\\$&') // escape regex specials
-    .replace(/\*/g, '[^/]+')                // * matches one segment
-    .replace(/:([a-zA-Z_][a-zA-Z0-9_]*)/g, '[^/]+'); // :id matches one segment
+  const safe = pattern
+    .replace(/[.+?^${}()|[\]\\]/g, '\\$&')
+    .replace(/\\\*/g, '[^/]+')
+    .replace(/:([a-zA-Z_][a-zA-Z0-9_]*)/g, '[^/]+');
 
-  return new RegExp(`${escaped}($|\\?)`);
+  return new RegExp(`^${safe}($|\\?)`);
 }
 
 export function defineSchema(pattern: string, schema: ApiSchema): void {
@@ -27,13 +26,15 @@ export function defineSchema(pattern: string, schema: ApiSchema): void {
 }
 
 export function getSchema(url: string): ApiSchema | undefined {
-  // strip query string for matching
   const cleanUrl = url.split('?')[0];
-
   for (const entry of registry) {
     if (entry.regex.test(cleanUrl)) {
       return entry.schema;
     }
   }
   return undefined;
+}
+
+export function clearRegistry(): void {
+  registry.length = 0;
 }

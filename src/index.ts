@@ -1,3 +1,12 @@
-export { defineSchema } from './schema.js';
+export { defineSchema, clearRegistry } from './schema.js';
 export { init, restore } from './interceptor.js';
-export type { ApiSchema, DiffResult, DriftItem, DiffMode, InitConfig, OnDriftCallback } from './types.js';
+export type {
+  ApiSchema,
+  SchemaField,
+  FieldType,
+  DiffResult,
+  DriftItem,
+  DiffMode,
+  InitConfig,
+  OnDriftCallback,
+} from './types.js';

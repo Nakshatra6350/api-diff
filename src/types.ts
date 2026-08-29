@@ -3,8 +3,8 @@ export type FieldType = 'string' | 'number' | 'boolean' | 'array' | 'object' | '
 export interface SchemaField {
   type: FieldType;
   required?: boolean;
-  fields?: Record<string, SchemaField>;  // for nested objects
-  items?: Record<string, SchemaField>;   // NEW — for array item validation
+  fields?: Record<string, SchemaField>;
+  items?: Record<string, SchemaField>;
 }
 
 export interface ApiSchema {
@@ -13,14 +13,15 @@ export interface ApiSchema {
 
 export type DiffMode = 'warn' | 'throw' | 'silent';
 
-// NEW — onDrift callback type
 export type OnDriftCallback = (url: string, drifts: DriftItem[]) => void;
 
-// NEW — init now accepts string or config object
 export type InitConfig = {
   mode?: DiffMode;
   onDrift?: OnDriftCallback;
   strict?: boolean;
+  ignore?: string[];
+  maxResponseTime?: number;
+  enabled?: boolean;
 };
 
 export interface DiffResult {
@@ -33,4 +34,5 @@ export interface DriftItem {
   expected: string;
   received: string;
   severity: 'missing' | 'type_mismatch' | 'unexpected';
+  responseTime?: number;
 }
