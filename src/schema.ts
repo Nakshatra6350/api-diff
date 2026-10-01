@@ -10,7 +10,7 @@ const registry: SchemaEntry[] = [];
 
 function patternToRegex(pattern: string): RegExp {
   const safe = pattern
-    .replace(/[.+?^${}()|[\]\\]/g, '\\$&')
+    .replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
     .replace(/\\\*/g, '[^/]+')
     .replace(/:([a-zA-Z_][a-zA-Z0-9_]*)/g, '[^/]+');
 
@@ -25,10 +25,23 @@ export function defineSchema(pattern: string, schema: ApiSchema): void {
   });
 }
 
+// strings to test against each registered pattern
+function normalizeUrl(url: string): string[] {
+  try {
+    // full URL — 'https://api.example.com/api/users?x=1' → '/api/users'
+    const parsed = new URL(url);
+    // also keep origin + path so schemas registered as full URLs still match
+    return [parsed.pathname, `${parsed.origin}${parsed.pathname}`];
+  } catch {
+    // relative path — strip query string and hash
+    return [url.split(/[?#]/)[0]];
+  }
+}
+
 export function getSchema(url: string): ApiSchema | undefined {
-  const cleanUrl = url.split('?')[0];
+  const candidates = normalizeUrl(url);
   for (const entry of registry) {
-    if (entry.regex.test(cleanUrl)) {
+    if (candidates.some(candidate => entry.regex.test(candidate))) {
       return entry.schema;
     }
   }

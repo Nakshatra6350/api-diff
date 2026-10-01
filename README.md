@@ -46,8 +46,8 @@ When your API returns a shape that doesn't match, you'll see this immediately:
 
 ```
 [api-diff] Contract drift on /api/users (142ms):
-  • email: expected string, got missing
-  • id: expected string, got number
+  🔴 BREAKING  email: expected string, got missing
+  🔴 BREAKING  id: expected string, got number
 ```
 
 ---
@@ -95,6 +95,8 @@ defineSchema('/api/orgs/:orgId/members/:memberId', {
 
 Query strings are automatically stripped before matching — `/api/users/123?include=posts` matches `/api/users/:id` cleanly.
 
+Full URLs are matched by their path, so a schema registered as `/api/users` also covers `fetch('https://api.example.com/api/users?page=2')`, `URL` objects, and `Request` objects.
+
 ---
 
 ## Strict mode
@@ -109,7 +111,7 @@ If your backend silently adds a new field:
 
 ```
 [api-diff] Contract drift on /api/users (98ms):
-  • newInternalField: expected not in schema, got string
+  🟢 INFO      newInternalField: expected not in schema, got string
 ```
 
 ---
@@ -192,7 +194,7 @@ init({
   mode: 'warn',
   onDrift: (url, drifts) => {
     // url    — the endpoint that drifted
-    // drifts — array of DriftItem with field, expected, received, severity, responseTime
+    // drifts — array of DriftItem with field, expected, received, severity, driftSeverity, responseTime
 
     // send to Sentry
     Sentry.captureMessage('API contract drift', {
@@ -222,6 +224,40 @@ init({
 
 ---
 
+## Drift severity
+
+Every `DriftItem` carries a `driftSeverity` that says how bad the drift is, and the console output is labelled with it.
+
+| `driftSeverity` | When | Label |
+|-----------------|------|-------|
+| `breaking` | A required field is missing, or a field has the wrong type | 🔴 BREAKING |
+| `warning` | A field is present but `null` where a type was expected | 🟡 WARNING |
+| `info` | An unexpected field caught by strict mode | 🟢 INFO |
+
+```
+[api-diff] Contract drift on /api/users (142ms):
+  🔴 BREAKING  email: expected string, got missing
+  🟡 WARNING   bio: expected string, got null
+  🟢 INFO      newField: expected not in schema, got string
+```
+
+Use it to decide what is worth alerting on:
+
+```ts
+init({
+  mode: 'silent',
+  strict: true,
+  onDrift: (url, drifts) => {
+    const breaking = drifts.filter(d => d.driftSeverity === 'breaking');
+    if (breaking.length > 0) {
+      Sentry.captureMessage('Breaking API drift', { extra: { url, breaking } });
+    }
+  }
+});
+```
+
+---
+
 ## Response time tracking
 
 Every drift report includes the response time as a **raw number in milliseconds** — no unit appended so you can use it directly in calculations.
@@ -243,7 +279,7 @@ The console output also shows response time automatically:
 
 ```
 [api-diff] Contract drift on /api/users/123 (1842ms):
-  • email: expected string, got missing
+  🔴 BREAKING  email: expected string, got missing
 ```
 
 ---
@@ -281,6 +317,33 @@ init({
 ```
 
 When `enabled: false`, the interceptor is not installed and `globalThis.fetch` is left untouched.
+
+---
+
+## Axios adapter
+
+Using Axios instead of `fetch`? Attach api-diff to an Axios instance through the `/axios` subpath. Schemas are shared with the main entry, so `defineSchema()` works the same way.
+
+```ts
+import axios from 'axios';
+import { defineSchema } from '@nakshatra6350/api-diff';
+import { createAxiosAdapter } from '@nakshatra6350/api-diff/axios';
+
+defineSchema('/api/users/:id', {
+  id:   { type: 'string' },
+  name: { type: 'string' },
+});
+
+// attach to an existing instance
+createAxiosAdapter(axios, { mode: 'warn', strict: true });
+
+// or use the returned instance
+const client = createAxiosAdapter(axios.create({ baseURL: '/api' }), { mode: 'warn' });
+```
+
+It accepts the same options as `init()` — `mode`, `strict`, `ignore`, `maxResponseTime`, `enabled`, `onDrift` — and you do not need to call `init()` when you only use Axios. Axios is an optional peer dependency; nothing is installed unless you already use it.
+
+Call `createAxiosAdapter` once per instance — calling it again on the same instance adds a second set of interceptors. Responses Axios rejects (4xx/5xx by default) are passed through without inspection.
 
 ---
 
@@ -363,7 +426,7 @@ If the second item in the array has a wrong type:
 
 ```
 [api-diff] Contract drift on /api/users (67ms):
-  • users[1].id: expected string, got number
+  🔴 BREAKING  users[1].id: expected string, got number
 ```
 
 ### Full production setup
@@ -453,7 +516,7 @@ Registers a contract for a URL pattern. Supports exact URLs, `:param` segments, 
 
 ### `init(config?)`
 
-Installs the fetch interceptor globally. Call once at your app's entry point.
+Installs the fetch interceptor globally. Call once at your app's entry point. Calling it again replaces the previous interceptor with the new config — `fetch` is never wrapped twice.
 
 ```ts
 init('warn');  // simple
@@ -479,7 +542,11 @@ init({         // full config
 
 ### `restore()`
 
-Removes the fetch interceptor and restores the original `fetch`. Use in test teardown.
+Removes the fetch interceptor and restores the original `fetch`. Use in test teardown. Safe to call more than once, or without a prior `init()`.
+
+### `isActive()`
+
+Returns `true` while the interceptor is installed.
 
 ### `clearRegistry()`
 
@@ -498,6 +565,7 @@ import type {
   FieldType,
   DiffResult,
   DriftItem,
+  DriftSeverity,
   DiffMode,
   InitConfig,
   OnDriftCallback,
@@ -509,6 +577,7 @@ const handleDrift: OnDriftCallback = (url, drifts) => {
     console.log(d.expected);     // string
     console.log(d.received);     // string
     console.log(d.severity);     // 'missing' | 'type_mismatch' | 'unexpected'
+    console.log(d.driftSeverity); // 'breaking' | 'warning' | 'info'
     console.log(d.responseTime); // number (ms) | undefined
   });
 };
@@ -520,8 +589,8 @@ const handleDrift: OnDriftCallback = (url, drifts) => {
 
 1. `defineSchema()` registers URL patterns compiled to regex at registration time — zero overhead per request
 2. `init()` wraps `globalThis.fetch` with a thin interceptor
-3. Every `fetch` call passes through — if the URL matches a pattern, the response is cloned
-4. The clone is parsed as JSON — non-JSON responses are skipped with a debug log
+3. Every `fetch` call passes through — if the URL path matches a pattern, the response is considered for inspection
+4. Only JSON responses are inspected — `Content-Type` must be `application/json` or end in `+json`. `204` and `304` responses are skipped, as is anything whose `Content-Length` exceeds 1MB (with a warning). `4xx`/`5xx` responses are still checked when they are JSON. Everything that passes is cloned and the clone is parsed
 5. The parsed data is deep-compared against the schema field by field, type by type, index by index for arrays
 6. In strict mode, the response is also checked for fields not present in the schema
 7. The ignore list is evaluated using four matching strategies: bare name, `root.` prefix, `[*]` wildcard, and exact path
