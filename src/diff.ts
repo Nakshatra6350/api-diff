@@ -1,3 +1,4 @@
+import { classifySeverity } from './severity.js';
 import type { ApiSchema, DriftItem, DiffResult } from './types.js';
 
 function shouldIgnore(fullKey: string, ignore: string[]): boolean {
@@ -45,14 +46,15 @@ export function diffResponse(
   const drifts: DriftItem[] = [];
 
   if (typeof data !== 'object' || data === null) {
+    const raw = {
+      field: prefix || 'root',
+      expected: 'object',
+      received: typeof data,
+      severity: 'type_mismatch' as const,
+    };
     return {
       passed: false,
-      drifts: [{
-        field: prefix || 'root',
-        expected: 'object',
-        received: typeof data,
-        severity: 'type_mismatch',
-      }],
+      drifts: [{ ...raw, driftSeverity: classifySeverity(raw) }],
     };
   }
 
@@ -64,12 +66,13 @@ export function diffResponse(
 
     if (!(key in obj)) {
       if (def.required !== false) {
-        drifts.push({
+        const raw = {
           field: fullKey,
           expected: def.type,
           received: 'missing',
-          severity: 'missing',
-        });
+          severity: 'missing' as const,
+        };
+        drifts.push({ ...raw, driftSeverity: classifySeverity(raw) });
       }
       continue;
     }
@@ -82,12 +85,13 @@ export function diffResponse(
         : typeof val;
 
     if (actualType !== def.type) {
-      drifts.push({
+      const raw = {
         field: fullKey,
         expected: def.type,
         received: actualType,
-        severity: 'type_mismatch',
-      });
+        severity: 'type_mismatch' as const,
+      };
+      drifts.push({ ...raw, driftSeverity: classifySeverity(raw) });
       continue;
     }
 
@@ -119,12 +123,13 @@ export function diffResponse(
       if (!schemaKeys.has(key)) {
         const fullKey = prefix ? `${prefix}.${key}` : key;
         if (!shouldIgnore(fullKey, ignore)) {
-          drifts.push({
+          const raw = {
             field: fullKey,
             expected: 'not in schema',
             received: typeof obj[key],
-            severity: 'unexpected',
-          });
+            severity: 'unexpected' as const,
+          };
+          drifts.push({ ...raw, driftSeverity: classifySeverity(raw) });
         }
       }
     }

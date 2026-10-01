@@ -26,6 +26,7 @@ describe('diffResponse', () => {
     expect(result.passed).toBe(false);
     expect(result.drifts[0].severity).toBe('missing');
     expect(result.drifts[0].field).toBe('name');
+    expect(result.drifts[0].driftSeverity).toBe('breaking');
   });
 
   it('does not flag optional missing field', () => {
@@ -44,6 +45,7 @@ describe('diffResponse', () => {
     expect(result.passed).toBe(false);
     expect(result.drifts[0].severity).toBe('type_mismatch');
     expect(result.drifts[0].field).toBe('amount');
+    expect(result.drifts[0].driftSeverity).toBe('breaking');
   });
 
   // ── nested objects ────────────────────────────────────────
@@ -64,6 +66,7 @@ describe('diffResponse', () => {
     expect(result.passed).toBe(false);
     expect(result.drifts[0].field).toBe('user.name');
     expect(result.drifts[0].severity).toBe('type_mismatch');
+    expect(result.drifts[0].driftSeverity).toBe('breaking');
   });
 
   // ── array item validation ─────────────────────────────────
@@ -89,6 +92,7 @@ describe('diffResponse', () => {
     expect(result.passed).toBe(false);
     expect(result.drifts[0].field).toBe('users[1].id');
     expect(result.drifts[0].severity).toBe('type_mismatch');
+    expect(result.drifts[0].driftSeverity).toBe('breaking');
   });
 
   // ── strict mode ───────────────────────────────────────────
@@ -103,6 +107,7 @@ describe('diffResponse', () => {
     expect(result.passed).toBe(false);
     expect(result.drifts[0].severity).toBe('unexpected');
     expect(result.drifts[0].field).toBe('surprise');
+    expect(result.drifts[0].driftSeverity).toBe('info');
   });
 
   it('strict mode passes when no unexpected fields', () => {
@@ -247,6 +252,7 @@ describe('diffResponse', () => {
     expect(result.passed).toBe(false);
     expect(result.drifts[0].severity).toBe('type_mismatch');
     expect(result.drifts[0].field).toBe('root');
+    expect(result.drifts[0].driftSeverity).toBe('breaking');
   });
 
 });

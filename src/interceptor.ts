@@ -1,5 +1,6 @@
 import { getSchema } from './schema.js';
 import { diffResponse } from './diff.js';
+import { severityLabel } from './severity.js';
 import type { DiffMode, InitConfig } from './types.js';
 
 // tags our interceptor and points at the fetch it wraps.
@@ -147,7 +148,9 @@ export function init(config: DiffMode | InitConfig = 'warn'): void {
 
         if (hasDrift) {
           const driftLines = driftsWithTime
-            .map(d => `  • ${d.field}: expected ${d.expected}, got ${d.received}`)
+            .map(d =>
+              `  ${severityLabel(d.driftSeverity)}  ${d.field}: expected ${d.expected}, got ${d.received}`
+            )
             .join('\n');
           parts.push(
             `[api-diff] Contract drift on ${url} (${responseTime}ms):\n${driftLines}`

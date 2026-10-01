@@ -6,6 +6,7 @@ export type {
   FieldType,
   DiffResult,
   DriftItem,
+  DriftSeverity,
   DiffMode,
   InitConfig,
   OnDriftCallback,

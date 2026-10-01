@@ -29,10 +29,13 @@ export interface DiffResult {
   drifts: DriftItem[];
 }
 
+export type DriftSeverity = 'breaking' | 'warning' | 'info';
+
 export interface DriftItem {
   field: string;
   expected: string;
   received: string;
   severity: 'missing' | 'type_mismatch' | 'unexpected';
+  driftSeverity: DriftSeverity;
   responseTime?: number;
 }
