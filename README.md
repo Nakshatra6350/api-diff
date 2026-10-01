@@ -95,6 +95,8 @@ defineSchema('/api/orgs/:orgId/members/:memberId', {
 
 Query strings are automatically stripped before matching — `/api/users/123?include=posts` matches `/api/users/:id` cleanly.
 
+Full URLs are matched by their path, so a schema registered as `/api/users` also covers `fetch('https://api.example.com/api/users?page=2')`, `URL` objects, and `Request` objects.
+
 ---
 
 ## Strict mode
@@ -453,7 +455,7 @@ Registers a contract for a URL pattern. Supports exact URLs, `:param` segments, 
 
 ### `init(config?)`
 
-Installs the fetch interceptor globally. Call once at your app's entry point.
+Installs the fetch interceptor globally. Call once at your app's entry point. Calling it again replaces the previous interceptor with the new config — `fetch` is never wrapped twice.
 
 ```ts
 init('warn');  // simple
@@ -479,7 +481,11 @@ init({         // full config
 
 ### `restore()`
 
-Removes the fetch interceptor and restores the original `fetch`. Use in test teardown.
+Removes the fetch interceptor and restores the original `fetch`. Use in test teardown. Safe to call more than once, or without a prior `init()`.
+
+### `isActive()`
+
+Returns `true` while the interceptor is installed.
 
 ### `clearRegistry()`
 
@@ -520,8 +526,8 @@ const handleDrift: OnDriftCallback = (url, drifts) => {
 
 1. `defineSchema()` registers URL patterns compiled to regex at registration time — zero overhead per request
 2. `init()` wraps `globalThis.fetch` with a thin interceptor
-3. Every `fetch` call passes through — if the URL matches a pattern, the response is cloned
-4. The clone is parsed as JSON — non-JSON responses are skipped with a debug log
+3. Every `fetch` call passes through — if the URL path matches a pattern, the response is considered for inspection
+4. Only JSON responses are inspected — `Content-Type` must be `application/json` or end in `+json`. `204` and `304` responses are skipped, as is anything whose `Content-Length` exceeds 1MB (with a warning). `4xx`/`5xx` responses are still checked when they are JSON. Everything that passes is cloned and the clone is parsed
 5. The parsed data is deep-compared against the schema field by field, type by type, index by index for arrays
 6. In strict mode, the response is also checked for fields not present in the schema
 7. The ignore list is evaluated using four matching strategies: bare name, `root.` prefix, `[*]` wildcard, and exact path

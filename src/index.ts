@@ -1,5 +1,5 @@
 export { defineSchema, clearRegistry } from './schema.js';
-export { init, restore } from './interceptor.js';
+export { init, restore, isActive } from './interceptor.js';
 export type {
   ApiSchema,
   SchemaField,
